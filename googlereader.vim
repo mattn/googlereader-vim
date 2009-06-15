@@ -15,14 +15,6 @@ endif
 let s:LIST_BUFNAME = '==GoogleReader List=='
 let s:CONTENT_BUFNAME = '==GoogleReader Content=='
 
-if !(exists("g:googlereader_email") && exists("g:googlereader_passwd"))
-  echoerr "You have no setting for google reader."
-  echohl WarningMsg
-  echo "set g:googlereader_email and g:googlereader_passwd in your vimrc"
-  echohl None
-  finish
-end
-
 function! s:nr2byte(nr)
   if a:nr < 0x80
     return nr2char(a:nr)
@@ -190,9 +182,9 @@ function! s:SetReaded(id)
 "  return s:WebAccess("http://www.google.com/reader/api/0/edit-tag", {}, {}, {"SID": a:sid})
 endfunction
 
-function! s:GetEntries(opt)
+function! s:GetEntries(email, passwd, opt)
   if !exists("s:sid")
-    let s:sid = s:GetSID(g:googlereader_email, g:googlereader_passwd)
+    let s:sid = s:GetSID(a:email, a:passwd)
   endif
   if !exists("s:token")
     let s:token = s:GetToken(s:sid)
@@ -325,6 +317,24 @@ function! s:ShowNextEntry()
 endfunction
 
 function! s:ShowEntries(opt)
+  if exists("g:googlereader_email")
+    let email = g:googlereader_email
+  else
+    let email = input('GoogleReader email:')
+  endif
+  if exists("g:googlereader_passwd")
+    let passwd = g:googlereader_passwd
+  else
+    let passwd = inputsecret('GoogleReader password:')
+  endif
+    
+  if len(email) == 0 || len(passwd) == 0
+    echohl WarningMsg
+    echo "authentication required for GoogleReader."
+    echohl None
+    finish
+  end
+
   let bufname = s:LIST_BUFNAME
   let winnr = bufwinnr(bufname)
   if winnr < 1
@@ -354,7 +364,7 @@ function! s:ShowEntries(opt)
   else
     echo "reading full entries..."
   endif
-  let s:entries = s:GetEntries(a:opt)
+  let s:entries = s:GetEntries(email, passwd, a:opt)
   let cnt = 1
   for l:entry in s:entries
     call setline(cnt, printf("%03d: %s %s %s", cnt, (l:entry['readed'] == 1 ? ' ' : 'U'), l:entry['source'], l:entry['title']))
