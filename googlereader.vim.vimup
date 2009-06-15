@@ -3,7 +3,7 @@ script_id: '2678'
 script_type: utility
 script_package: googlereader.vim
 script_version: '0.2'
-required_vim_version: '7.2'
+required_vim_version: '7.0'
 summary: vimscript for googlereader
 
 detailed_description: |
