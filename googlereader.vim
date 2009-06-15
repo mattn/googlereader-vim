@@ -2,11 +2,13 @@
 " File: googlereader.vim
 " Author: Yasuhiro Matsumoto <mattn.jp@gmail.com>
 " Last Change: 15-Jun-2009.
-" Version: 0.4
+" Version: 0.5
 " WebPage: http://github.com/mattn/googlereader-vim/tree/master
 " Usage:
 "
 "   :GoogleReader
+"
+" GetLatestVimScripts: 2678 1 :AutoInstall: googlereader.vim
 
 if !executable('curl')
   finish
