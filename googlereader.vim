@@ -12,6 +12,9 @@ if !executable('curl')
   finish
 endif
 
+let s:LIST_BUFNAME = '==GoogleReader List=='
+let s:CONTENT_BUFNAME = '==GoogleReader Content=='
+
 if !(exists("g:googlereader_email") && exists("g:googlereader_passwd"))
   echoerr "You have no setting for google reader."
   echohl WarningMsg
@@ -214,7 +217,7 @@ function! s:GetEntries(opt)
 endfunction
 
 function! s:ShowEntry()
-  let bufname = '==GoogleReader[List]=='
+  let bufname = s:LIST_BUFNAME
   let winnr = bufwinnr(bufname)
   if winnr > 0 && winnr != winnr()
     execute winnr.'wincmd w'
@@ -222,13 +225,13 @@ function! s:ShowEntry()
 
   let row = str2nr(substitute(getline('.'), '^\(\d\+\).*', '\1', ''))-1
 
-  let bufname = '==GoogleReader[Content]== '
+  let bufname = s:CONTENT_BUFNAME
   let winnr = bufwinnr(bufname)
   if winnr < 1
     if bufname('%').'X' ==# 'X' && &modified == 0
-      silent! exec 'edit '.escape(bufname, ' ')
+      silent! edit `=bufname`
     else
-      silent! exec 'belowright 15new '.escape(bufname, ' ')
+      silent! belowright 15new `=bufname`
     endif
   else
     if winnr != winnr()
@@ -263,7 +266,7 @@ function! s:ShowEntry()
 endfunction
 
 function! s:ShowEntryInBrowser()
-  let bufname = '==GoogleReader[Content]=='
+  let bufname = s:CONTENT_BUFNAME
   let winnr = bufwinnr(bufname)
   if winnr < 1
     return
@@ -281,7 +284,7 @@ function! s:ShowEntryInBrowser()
 endfunction
 
 function! s:ShowPrevEntry()
-  let bufname = '==GoogleReader[Content]=='
+  let bufname = s:CONTENT_BUFNAME
   let winnr = bufwinnr(bufname)
   if winnr < 1
     return
@@ -290,7 +293,7 @@ function! s:ShowPrevEntry()
     execute winnr.'wincmd w'
   endif
 
-  let bufname = '==GoogleReader[List]=='
+  let bufname = s:LIST_BUFNAME
   let winnr = bufwinnr(bufname)
   if winnr > 0 && winnr != winnr()
     execute winnr.'wincmd w'
@@ -300,16 +303,19 @@ function! s:ShowPrevEntry()
 endfunction
 
 function! s:ShowNextEntry()
-  let bufname = '==GoogleReader[Content]=='
+  let bufname = s:CONTENT_BUFNAME
   let winnr = bufwinnr(bufname)
+  let g:hoge = winnr
   if winnr < 1
     return
   endif
+  let g:hoge = winnr
   if winnr != winnr()
     execute winnr.'wincmd w'
   endif
+  let g:hoge = 'foo'
 
-  let bufname = '==GoogleReader[List]=='
+  let bufname = s:LIST_BUFNAME
   let winnr = bufwinnr(bufname)
   if winnr > 0 && winnr != winnr()
     execute winnr.'wincmd w'
@@ -319,13 +325,13 @@ function! s:ShowNextEntry()
 endfunction
 
 function! s:ShowEntries(opt)
-  let bufname = '==GoogleReader[List]=='
+  let bufname = s:LIST_BUFNAME
   let winnr = bufwinnr(bufname)
   if winnr < 1
     if &modified == 0
-      silent! exec 'edit '.escape(bufname, ' ')
+      silent! edit `=bufname`
     else
-      silent! exec 'belowright new '.escape(bufname, ' ')
+      silent! belowright new `=bufname`
     endif
   else
     if winnr != winnr()
