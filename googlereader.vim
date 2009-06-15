@@ -265,10 +265,11 @@ endfunction
 function! s:ShowEntryInBrowser()
   let bufname = '==GoogleReader[Content]=='
   let winnr = bufwinnr(bufname)
-  if winnr > 0 && winnr != winnr()
-    execute winnr.'wincmd w'
-  else
+  if winnr < 1
     return
+  endif
+  if winnr != winnr()
+    execute winnr.'wincmd w'
   endif
 
   let url = s:entries[b:url]
@@ -282,10 +283,11 @@ endfunction
 function! s:ShowPrevEntry()
   let bufname = '==GoogleReader[Content]=='
   let winnr = bufwinnr(bufname)
-  if winnr > 0 && winnr != winnr()
-    execute winnr.'wincmd w'
-  else
+  if winnr < 1
     return
+  endif
+  if winnr != winnr()
+    execute winnr.'wincmd w'
   endif
 
   let bufname = '==GoogleReader[List]=='
@@ -300,10 +302,11 @@ endfunction
 function! s:ShowNextEntry()
   let bufname = '==GoogleReader[Content]=='
   let winnr = bufwinnr(bufname)
-  if winnr > 0 && winnr != winnr()
-    execute winnr.'wincmd w'
-  else
+  if winnr < 1
     return
+  endif
+  if winnr != winnr()
+    execute winnr.'wincmd w'
   endif
 
   let bufname = '==GoogleReader[List]=='
