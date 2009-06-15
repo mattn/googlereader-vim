@@ -2,7 +2,7 @@
 " File: googlereader.vim
 " Author: Yasuhiro Matsumoto <mattn.jp@gmail.com>
 " Last Change: 15-Jun-2009.
-" Version: 0.2
+" Version: 0.3
 " WebPage: http://github.com/mattn/googlereader-vim/tree/master
 " Usage:
 "
