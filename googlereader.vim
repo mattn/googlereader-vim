@@ -226,9 +226,9 @@ function! s:ShowEntry()
   let winnr = bufwinnr(bufname)
   if winnr < 1
     if bufname('%').'X' ==# 'X' && &modified == 0
-      call AL_execute('edit '.escape(bufname, ' '))
+      silent! exec 'edit '.escape(bufname, ' ')
     else
-      call AL_execute('belowright 15new '.escape(bufname, ' '))
+      silent! exec 'belowright 15new '.escape(bufname, ' ')
     endif
   else
     if winnr != winnr()
@@ -323,9 +323,9 @@ function! s:ShowEntries(opt)
   let winnr = bufwinnr(bufname)
   if winnr < 1
     if &modified == 0
-      call AL_execute('edit '.escape(bufname, ' '))
+      silent! exec 'edit '.escape(bufname, ' ')
     else
-      call AL_execute('belowright new '.escape(bufname, ' '))
+      silent! exec 'belowright new '.escape(bufname, ' ')
     endif
   else
     if winnr != winnr()
