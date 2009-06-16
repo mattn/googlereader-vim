@@ -284,11 +284,10 @@ function! s:ShowEntryInBrowser()
     execute winnr.'wincmd w'
   endif
 
-  let url = s:entries[b:url]
   if has('win32')
-    silent! exec "!start rundll32 url.dll,FileProtocolHandler ".substitute(url,'#', '\\#', '')
+    silent! exec "!start rundll32 url.dll,FileProtocolHandler ".escape(b:url ,'#')
   else
-    system("firefox '".url."' 2>&1 > /dev/null &")
+    system("firefox '".b:url."' 2>&1 > /dev/null &")
   endif
 endfunction
 
