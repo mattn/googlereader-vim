@@ -7,23 +7,29 @@ required_vim_version: '7.0'
 summary: vimscript for googlereader
 
 detailed_description: |
-  This is vimscript for googlereader (www.google.com/reader/)
+  This is vimscript for googlereader (http://www.google.com/reader/)
   
   Usage:
   
     :GoogleReader
 
+  KeyBinding:
     [LIST]
-    type <c-n>, <c-p> to move up/down cursor.
-    type <cr> to show entry.
-    type <c-t> to toggle read/unread mark.
-    type <c-I> to open URL with browser.
-    type q to close window.
+    type <c-n> to goto next and open entry
+    type <c-p> to goto prev and open entry
+    type <cr> to show entry
+    type <c-a> to show all list
+    type <s-a> to show unread list
+    type <c-t> to toggle read/unread mark
+    type <c-s> to toggle star/unstar mark
+    type r to reload entries
+    type q to close window
 
     [CONTENT]
-    type <c-n> to show next entry.
-    type <c-p> to show previous entry.
-    type q to close window.
+    type <c-n> to show next entry
+    type <c-p> to show previous entry
+    type <c-i> to open URL with browser
+    type q to close window
   
   Require:
     curl 

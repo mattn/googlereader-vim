@@ -10,7 +10,13 @@
 "
 " GetLatestVimScripts: 2678 1 :AutoInstall: googlereader.vim
 
+let g:googlereader_vim_version = "1.0"
+if &compatible
+  finish
+endif
+
 if !executable('curl')
+  echoerr "GoogleReader: require 'curl' command"
   finish
 endif
 
@@ -283,10 +289,12 @@ function! s:ShowEntry()
   syntax match SpecialKey /^\(Source\|Title\|URL\|Publish\|Author\):/he=e-1
   nnoremap <silent> <buffer> <space> <c-d>
   nnoremap <silent> <buffer> q :bw!<cr>
-  exec 'nnoremap <silent> <buffer> <cr> :call <SID>ShowEntry()<cr>'
   exec 'nnoremap <silent> <buffer> <c-p> :call <SID>ShowPrevEntry()<cr>'
   exec 'nnoremap <silent> <buffer> <c-n> :call <SID>ShowNextEntry()<cr>'
   exec 'nnoremap <silent> <buffer> <c-i> :call <SID>ShowEntryInBrowser()<cr>'
+  exec 'nnoremap <silent> <buffer> <c-t> :call <SID>ToggleReaded()<cr>'
+  exec 'nnoremap <silent> <buffer> <c-s> :call <SID>ToggleStarred()<cr>'
+  exec 'nnoremap <silent> <buffer> ?     :call <SID>Help()<cr>'
   let b:id = entry['id']
   let b:url = entry['url']
   let b:readed = entry['readed']
@@ -454,18 +462,48 @@ function! s:ShowEntries(opt)
   endfor
   setlocal nomodifiable
   syntax match SpecialKey /^\d\+:/he=e-1
-  exec 'nnoremap <silent> <buffer> <cr> :call <SID>ShowEntry()<cr>'
-  exec 'nnoremap <silent> <buffer> r :call <SID>ShowEntries({})<cr>'
+  exec 'nnoremap <silent> <buffer> <cr>  :call <SID>ShowEntry()<cr>'
+  exec 'nnoremap <silent> <buffer> r     :call <SID>ShowEntries({})<cr>'
   exec 'nnoremap <silent> <buffer> <s-a> :call <SID>ShowEntries({"xt": "user/-/state/com.google/read"})<cr>'
   exec 'nnoremap <silent> <buffer> <c-a> :call <SID>ShowEntries({"xt": ""})<cr>'
   exec 'nnoremap <silent> <buffer> <c-t> :call <SID>ToggleReaded()<cr>'
   exec 'nnoremap <silent> <buffer> <c-s> :call <SID>ToggleStarred()<cr>'
+  exec 'nnoremap <silent> <buffer> ?     :call <SID>Help()<cr>'
   nnoremap <silent> <buffer> <c-n> j
   nnoremap <silent> <buffer> <c-p> k
   nnoremap <silent> <buffer> q :bw!<cr>
   normal! gg
   redraw!
   echo ""
+endfunction
+
+function! s:Help()
+  echohl None
+  echo 'GoogleReader.vim version ' . g:googlereader_vim_version
+  echohl Title
+  echo '[LIST]'
+  echohl SpecialKey
+  echo '<c-n>     : goto next and open entry'
+  echo '<c-p>     : goto prev and open entry'
+  echo '<cr>      : show the entry'
+  echo '<c-a>     : show all list'
+  echo '<s-a>     : show unread list'
+  echo '<c-t>     : toggle read/unread mark'
+  echo '<c-s>     : toggle star/unstar mark'
+  echo 'r         : reload entries'
+  echo 'q         : close window'
+  echohl Title
+  echo '[LIST]'
+  echohl SpecialKey
+  echo '<c-n>     : show next entry'
+  echo '<c-p>     : show prev entry'
+  echo '<c-i>     : open URL with browser'
+  echo 'q         : close window'
+  echohl MoreMsg
+  echo "[Hit any key]"
+  echohl None
+  call getchar()
+  redraw!
 endfunction
 
 command! GoogleReader call s:ShowEntries({"xt": ""})
