@@ -82,6 +82,7 @@ endfunction
 
 function! s:WebAccess(url, getdata, postdata, cookie)
   let url = a:url
+
   let getdata = ''
   for key in keys(a:getdata)
     if len(getdata)
@@ -89,18 +90,35 @@ function! s:WebAccess(url, getdata, postdata, cookie)
     endif
     let getdata = getdata . key . "=" . s:encodeURIComponent(a:getdata[key])
   endfor
-  if len(getdata)
-    let url = a:url . "?" . getdata
-  endif
+
   let postdata = ''
   for key in keys(a:postdata)
-    let postdata = postdata . " -d " . key . "=" . s:encodeURIComponent(a:postdata[key])
+    if len(postdata)
+	  let postdata .= "&"
+    endif
+    let postdata = postdata . key . "=" . s:encodeURIComponent(a:postdata[key])
   endfor
+
   let cookie = ''
   for key in keys(a:cookie)
     let cookie = cookie . " -b " . key . "=" . s:encodeURIComponent(a:cookie[key])
   endfor
-  return system("curl -s -k " . postdata . cookie . " \"" . url . "\"")
+
+  if len(getdata)
+    let url = a:url . "?" . getdata
+  endif
+  if len(postdata)
+    let file = tempname()
+    exec 'redir! > '.file 
+    silent echo postdata
+    redir END
+    let quote = &shellxquote == '"' ?  "'" : '"'
+    let res = system("curl -s -k -d @" . quote.file.quote . cookie . " \"" . url . "\"")
+    call delete(file)
+  else
+    let res = system("curl -s -k " . cookie . " \"" . url . "\"")
+  endif
+  return res
 endfunction
 
 function! s:FormatEntry(str)
