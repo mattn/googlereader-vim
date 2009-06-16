@@ -34,7 +34,7 @@ detailed_description: |
     type ? to show help list
 
   Require:
-    curl 
+    curl command (http://curl.haxx.se/)
 
 install_details: |
   copy it to your plugin directory.
