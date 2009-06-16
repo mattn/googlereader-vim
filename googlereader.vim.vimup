@@ -41,7 +41,7 @@ install_details: |
 
 versions:
 - '1.2': |
-   This is an upgrade for GoogleReader.vim: changed keybind for star/unstar to <s-s> from <c-s> because it does not work on unix terminal.
+   This is an upgrade for GoogleReader.vim: changed keybind for star/unstar to <s-s> from <c-s> because it does not work on unix terminal. and fixed list layout of entries.
 
 - '1.1': |
    This is an upgrade for GoogleReader.vim: show help list with typeing '?'.
