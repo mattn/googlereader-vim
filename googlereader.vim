@@ -23,6 +23,68 @@ endif
 let s:LIST_BUFNAME = '==GoogleReader List=='
 let s:CONTENT_BUFNAME = '==GoogleReader Content=='
 
+function! s:wcwidth(ucs)
+  let ucs = a:ucs
+  if (ucs >= 0x1100
+   \  && (ucs <= 0x115f
+   \  || ucs == 0x2329
+   \  || ucs == 0x232a
+   \  || (ucs >= 0x2e80 && ucs <= 0xa4cf
+   \      && ucs != 0x303f)
+   \  || (ucs >= 0xac00 && ucs <= 0xd7a3)
+   \  || (ucs >= 0xf900 && ucs <= 0xfaff)
+   \  || (ucs >= 0xfe30 && ucs <= 0xfe6f)
+   \  || (ucs >= 0xff00 && ucs <= 0xff60)
+   \  || (ucs >= 0xffe0 && ucs <= 0xffe6)
+   \  || (ucs >= 0x20000 && ucs <= 0x2fffd)
+   \  || (ucs >= 0x30000 && ucs <= 0x3fffd)
+   \  ))
+    return 2
+  endif
+  return 1
+endfunction
+
+function! s:wcswidth(str)
+  let mx_first = '^\(.\)'
+  let str = a:str
+  let width = 0
+  while 1
+    let ucs = char2nr(substitute(str, mx_first, '\1', ''))
+    if ucs == 0
+      break
+    endif
+    let width = width + s:wcwidth(ucs)
+    let str = substitute(str, mx_first, '', '')
+  endwhile
+  return width
+endfunction
+
+function! s:truncate(str, num)
+  let mx_first = '^\(.\)\(.*\)$'
+  let str = a:str
+  let ret = ''
+  let width = 0
+  while 1
+    let char = substitute(str, mx_first, '\1', '')
+    let ucs = char2nr(char)
+    if ucs == 0
+      break
+    endif
+    let cells = s:wcwidth(ucs)
+	if width + cells > a:num
+	  break
+    endif
+    let width = width + cells
+	let ret = ret . char
+    let str = substitute(str, mx_first, '\2', '')
+  endwhile
+  while width + 1 <= a:num
+    let ret = ret . " "
+    let width = width + 1
+  endwhile
+  return ret
+endfunction
+
 function! s:nr2byte(nr)
   if a:nr < 0x80
     return nr2char(a:nr)
@@ -92,7 +154,7 @@ function! s:WebAccess(url, getdata, postdata, cookie)
   let getdata = ''
   for key in keys(a:getdata)
     if len(getdata)
-	  let getdata .= "&"
+      let getdata .= "&"
     endif
     let getdata = getdata . key . "=" . s:encodeURIComponent(a:getdata[key])
   endfor
@@ -100,7 +162,7 @@ function! s:WebAccess(url, getdata, postdata, cookie)
   let postdata = ''
   for key in keys(a:postdata)
     if len(postdata)
-	  let postdata .= "&"
+      let postdata .= "&"
     endif
     let postdata = postdata . key . "=" . s:encodeURIComponent(a:postdata[key])
   endfor
@@ -332,8 +394,8 @@ function! s:ShowPrevEntry()
   let winnr = bufwinnr(bufname)
   if winnr > 0 && winnr != winnr()
     execute winnr.'wincmd w'
-	normal! k
-	call s:ShowEntry()
+    normal! k
+    call s:ShowEntry()
   endif
 endfunction
 
@@ -351,8 +413,8 @@ function! s:ShowNextEntry()
   let winnr = bufwinnr(bufname)
   if winnr > 0 && winnr != winnr()
     execute winnr.'wincmd w'
-	normal! j
-	call s:ShowEntry()
+    normal! j
+    call s:ShowEntry()
   endif
 endfunction
 
@@ -422,7 +484,7 @@ function! s:ShowEntries(opt)
     echohl WarningMsg
     echo "authentication required for GoogleReader."
     echohl None
-    finish
+    return
   end
 
   let bufname = s:LIST_BUFNAME
@@ -457,7 +519,11 @@ function! s:ShowEntries(opt)
   let s:entries = s:GetEntries(email, passwd, a:opt)
   let cnt = 1
   for l:entry in s:entries
-    call setline(cnt, printf("%03d: %s%s %s %s", cnt, (l:entry['starred'] == 1 ? '*' : ' '), (l:entry['readed'] == 1 ? ' ' : 'U'), l:entry['source'], l:entry['title']))
+	let g:moge = l:entry['source']
+    let source = s:truncate(g:moge, 20)
+	let g:hoge = source
+    "call setline(cnt, printf("%03d: %s%s %s %s", cnt, (l:entry['starred'] == 1 ? '*' : ' '), (l:entry['readed'] == 1 ? ' ' : 'U'), l:entry['source'], l:entry['title']))
+    call setline(cnt, printf("%03d: %s%s %s %s", cnt, (l:entry['starred'] == 1 ? '*' : ' '), (l:entry['readed'] == 1 ? ' ' : 'U'), source, l:entry['title']))
     let cnt = cnt + 1
   endfor
   setlocal nomodifiable
