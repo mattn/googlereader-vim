@@ -112,6 +112,8 @@ function! s:WebAccess(url, getdata, postdata, cookie)
     exec 'redir! > '.file 
     silent echo postdata
     redir END
+	let g:hoge = url
+	let g:moge = postdata
     let quote = &shellxquote == '"' ?  "'" : '"'
     let res = system("curl -s -k -d @" . quote.file.quote . cookie . " \"" . url . "\"")
     call delete(file)
@@ -187,7 +189,7 @@ function! s:SetMark(id, readed)
   else
     let opt = {'a': 'user/-/state/com.google/kept-unread', 'ac': 'edit-tags', 'i': a:id, 's': 'user/-/state/com.google/reading-list', 'r': 'user/-/state/com.google/read'}
   endif
-  return s:WebAccess("http://www.google.com/reader/api/0/edit-tag", {}, {}, {"SID": s:sid, "T": s:token})
+  return s:WebAccess("http://www.google.com/reader/api/0/edit-tag", {}, opt, {"SID": s:sid, "T": s:token})
 endfunction
 
 function! s:GetEntries(email, passwd, opt)
@@ -343,10 +345,10 @@ function! s:ToggleMark()
   let entry = s:entries[row]
   call s:SetMark(entry['id'], (mark == 'U' ? 1 : 0))
   let str = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\1\2'.(mark == 'U' ? ' ' : 'U').'\4', '')
-  let oldmodifiable = &modifiable
+  let oldmodifiable = &l:modifiable
   setlocal modifiable
   call setline(line('.'), str)
-  let &modifiable = oldmodifiable
+  let &l:modifiable = oldmodifiable
   wincmd p
 endfunction
 
