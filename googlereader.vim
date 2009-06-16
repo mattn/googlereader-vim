@@ -2,7 +2,7 @@
 " File: googlereader.vim
 " Author: Yasuhiro Matsumoto <mattn.jp@gmail.com>
 " Last Change: 16-Jun-2009.
-" Version: 1.1
+" Version: 1.2
 " WebPage: http://github.com/mattn/googlereader-vim/tree/master
 " Usage:
 "
@@ -10,7 +10,7 @@
 "
 " GetLatestVimScripts: 2678 1 :AutoInstall: googlereader.vim
 
-let g:googlereader_vim_version = "1.0"
+let g:googlereader_vim_version = "1.2"
 if &compatible
   finish
 endif
@@ -355,7 +355,7 @@ function! s:ShowEntry()
   exec 'nnoremap <silent> <buffer> <c-n> :call <SID>ShowNextEntry()<cr>'
   exec 'nnoremap <silent> <buffer> <c-i> :call <SID>ShowEntryInBrowser()<cr>'
   exec 'nnoremap <silent> <buffer> <c-t> :call <SID>ToggleReaded()<cr>'
-  exec 'nnoremap <silent> <buffer> <c-s> :call <SID>ToggleStarred()<cr>'
+  exec 'nnoremap <silent> <buffer> <s-s> :call <SID>ToggleStarred()<cr>'
   exec 'nnoremap <silent> <buffer> ?     :call <SID>Help()<cr>'
   let b:id = entry['id']
   let b:url = entry['url']
@@ -533,7 +533,7 @@ function! s:ShowEntries(opt)
   exec 'nnoremap <silent> <buffer> <s-a> :call <SID>ShowEntries({"xt": "user/-/state/com.google/read"})<cr>'
   exec 'nnoremap <silent> <buffer> <c-a> :call <SID>ShowEntries({"xt": ""})<cr>'
   exec 'nnoremap <silent> <buffer> <c-t> :call <SID>ToggleReaded()<cr>'
-  exec 'nnoremap <silent> <buffer> <c-s> :call <SID>ToggleStarred()<cr>'
+  exec 'nnoremap <silent> <buffer> <s-s> :call <SID>ToggleStarred()<cr>'
   exec 'nnoremap <silent> <buffer> ?     :call <SID>Help()<cr>'
   nnoremap <silent> <buffer> <c-n> j
   nnoremap <silent> <buffer> <c-p> k
@@ -555,7 +555,7 @@ function! s:Help()
   echo '<c-a>     : show all list'
   echo '<s-a>     : show unread list'
   echo '<c-t>     : toggle read/unread mark'
-  echo '<c-s>     : toggle star/unstar mark'
+  echo '<s-s>     : toggle star/unstar mark'
   echo 'r         : reload entries'
   echo 'q         : close window'
   echohl Title
