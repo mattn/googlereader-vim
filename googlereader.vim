@@ -131,6 +131,7 @@ function! s:FormatEntry(str)
   let mx_author = '^.*<author[^>]*><name[^>]*>\([^<]*\)</name></author>.*$'
   let mx_published = '^.*<published>\([^<]*\)</published>.*$'
   let mx_readed = '^.*<category.\{-} label="read"/>.*$'
+  let mx_starred = '^.*<category.\{-} label="starred"/>.*$'
 
   let str = substitute(a:str, mx_source, '\1\3', '')
 
@@ -170,11 +171,28 @@ function! s:FormatEntry(str)
   let content = s:decodeEntityReference(content)
 
   let readed = len(matchstr(str, mx_readed)) > 0 ? 1 : 0
+  let starred = len(matchstr(str, mx_starred)) > 0 ? 1 : 0
 
-  return {"id": id, "title": title, "source": source, "url": url, "content": content, "author": author, "published": published, "readed": readed}
+  return {"id": id, "title": title, "source": source, "url": url, "content": content, "author": author, "published": published, "readed": readed, "starred": starred}
 endfunction
 
-function! s:SetMark(id, readed)
+function! s:SetStarred(id, star)
+  if !exists("s:sid")
+    let s:sid = substitute(s:WebAccess("https://www.google.com/accounts/ClientLogin", {}, {"Email": a:email, "Passwd": a:passwd, "source": "googlereader.vim", "service": "reader"}, {}), '^SID=\([^\x0a]*\).*', '\1', '')
+  endif
+  if !exists("s:token")
+    let s:token = s:WebAccess("http://www.google.com/reader/api/0/token", {}, {}, {"SID": s:sid})
+  endif
+
+  if a:star
+    let opt = {'a': 'user/-/state/com.google/starred', 'ac': 'edit-tags', 'i': a:id, 's': 'user/-/state/com.google/reading-list', 'T': s:token}
+  else
+    let opt = {'r': 'user/-/state/com.google/starred', 'ac': 'edit-tags', 'i': a:id, 's': 'user/-/state/com.google/reading-list', 'T': s:token}
+  endif
+  return s:WebAccess("http://www.google.com/reader/api/0/edit-tag", {}, opt, {"SID": s:sid})
+endfunction
+
+function! s:SetReaded(id, readed)
   if !exists("s:sid")
     let s:sid = substitute(s:WebAccess("https://www.google.com/accounts/ClientLogin", {}, {"Email": a:email, "Passwd": a:passwd, "source": "googlereader.vim", "service": "reader"}, {}), '^SID=\([^\x0a]*\).*', '\1', '')
   endif
@@ -225,9 +243,10 @@ function! s:ShowEntry()
   endif
 
   let str = getline('.')
-  let mx_row_mark = '^\(\d\+\)\(: \)\([U ]\)\( .*\)'
+  let mx_row_mark = '^\(\d\+\)\(: \)\([\* ]\)\([U ]\)\( .*\)'
   let row = str2nr(substitute(matchstr(str, mx_row_mark), mx_row_mark, '\1', '')) - 1
-  let mark = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\3', '')
+  let starred = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\3', '')
+  let readed = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\4', '')
 
   let bufname = s:CONTENT_BUFNAME
   let winnr = bufwinnr(bufname)
@@ -246,8 +265,8 @@ function! s:ShowEntry()
   setlocal buftype=nofile bufhidden=hide noswapfile nowrap ft= nowrap nonumber modifiable
   silent! %d _
   let entry = s:entries[row]
-  if mark == 'U'
-    call s:ToggleMark()
+  if readed == 'U'
+    call s:ToggleReaded()
   endif
 
   call setline(1, printf("Source: %s", entry['source']))
@@ -329,7 +348,7 @@ function! s:ShowNextEntry()
   endif
 endfunction
 
-function! s:ToggleMark()
+function! s:ToggleStarred()
   let bufname = s:LIST_BUFNAME
   let winnr = bufwinnr(bufname)
   let oldwinnr = winnr()
@@ -338,12 +357,38 @@ function! s:ToggleMark()
   endif
 
   let str = getline('.')
-  let mx_row_mark = '^\(\d\+\)\(: \)\([U ]\)\( .*\)'
+  let mx_row_mark = '^\(\d\+\)\(: \)\([\* ]\)\([U ]\)\( .*\)'
   let row = str2nr(substitute(matchstr(str, mx_row_mark), mx_row_mark, '\1', '')) - 1
-  let mark = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\3', '')
+  let starred = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\3', '')
+  let readed = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\4', '')
   let entry = s:entries[row]
-  call s:SetMark(entry['id'], (mark == 'U' ? 1 : 0))
-  let str = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\1\2'.(mark == 'U' ? ' ' : 'U').'\4', '')
+  call s:SetStarred(entry['id'], (starred == '*' ? 0 : 1))
+  let str = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\1\2'.(starred == '*' ? ' ' : '*').readed.'\5', '')
+  let oldmodifiable = &l:modifiable
+  setlocal modifiable
+  call setline(line('.'), str)
+  let &l:modifiable = oldmodifiable
+  if winnr > 0 && winnr != oldwinnr
+    wincmd p
+  endif
+endfunction
+
+function! s:ToggleReaded()
+  let bufname = s:LIST_BUFNAME
+  let winnr = bufwinnr(bufname)
+  let oldwinnr = winnr()
+  if winnr > 0 && winnr != oldwinnr
+    execute winnr.'wincmd w'
+  endif
+
+  let str = getline('.')
+  let mx_row_mark = '^\(\d\+\)\(: \)\([\* ]\)\([U ]\)\( .*\)'
+  let row = str2nr(substitute(matchstr(str, mx_row_mark), mx_row_mark, '\1', '')) - 1
+  let starred = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\3', '')
+  let readed = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\4', '')
+  let entry = s:entries[row]
+  call s:SetReaded(entry['id'], (readed == 'U' ? 1 : 0))
+  let str = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\1\2'.starred.(readed == 'U' ? ' ' : 'U').'\5', '')
   let oldmodifiable = &l:modifiable
   setlocal modifiable
   call setline(line('.'), str)
@@ -404,7 +449,7 @@ function! s:ShowEntries(opt)
   let s:entries = s:GetEntries(email, passwd, a:opt)
   let cnt = 1
   for l:entry in s:entries
-    call setline(cnt, printf("%03d: %s %s %s", cnt, (l:entry['readed'] == 1 ? ' ' : 'U'), l:entry['source'], l:entry['title']))
+    call setline(cnt, printf("%03d: %s%s %s %s", cnt, (l:entry['starred'] == 1 ? '*' : ' '), (l:entry['readed'] == 1 ? ' ' : 'U'), l:entry['source'], l:entry['title']))
     let cnt = cnt + 1
   endfor
   setlocal nomodifiable
@@ -413,7 +458,8 @@ function! s:ShowEntries(opt)
   exec 'nnoremap <silent> <buffer> r :call <SID>ShowEntries({})<cr>'
   exec 'nnoremap <silent> <buffer> <s-a> :call <SID>ShowEntries({"xt": "user/-/state/com.google/read"})<cr>'
   exec 'nnoremap <silent> <buffer> <c-a> :call <SID>ShowEntries({"xt": ""})<cr>'
-  exec 'nnoremap <silent> <buffer> <c-t> :call <SID>ToggleMark()<cr>'
+  exec 'nnoremap <silent> <buffer> <c-t> :call <SID>ToggleReaded()<cr>'
+  exec 'nnoremap <silent> <buffer> <c-s> :call <SID>ToggleStarred()<cr>'
   nnoremap <silent> <buffer> <c-n> j
   nnoremap <silent> <buffer> <c-p> k
   nnoremap <silent> <buffer> q :bw!<cr>
