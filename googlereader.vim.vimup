@@ -12,6 +12,18 @@ detailed_description: |
   Usage:
   
     :GoogleReader
+
+    [LIST]
+    type <c-n>, <c-p> to move up/down cursor.
+    type <cr> to show entry.
+    type <c-t> to toggle read/unread mark.
+    type <c-I> to open URL with browser.
+    type q to close window.
+
+    [CONTENT]
+    type <c-n> to show next entry.
+    type <c-p> to show previous entry.
+    type q to close window.
   
   Require:
     curl 
