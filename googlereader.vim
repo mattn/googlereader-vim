@@ -112,8 +112,6 @@ function! s:WebAccess(url, getdata, postdata, cookie)
     exec 'redir! > '.file 
     silent echo postdata
     redir END
-	let g:hoge = url
-	let g:moge = postdata
     let quote = &shellxquote == '"' ?  "'" : '"'
     let res = system("curl -s -k -d @" . quote.file.quote . cookie . " \"" . url . "\"")
     call delete(file)
@@ -124,7 +122,7 @@ function! s:WebAccess(url, getdata, postdata, cookie)
 endfunction
 
 function! s:FormatEntry(str)
-  let mx_id = '^\(.*\)<id[^>]*>\(.*\)</id>\(.*\)$'
+  let mx_id = '^.*<id[^>]*>\(.*\)</id>.*$'
   let mx_source = '^\(.*\)<source[^>]*>\(.*\)</source>\(.*\)$'
   let mx_url = '^.*<link rel="alternate" href="\([^"]\+\)".*$'
   let mx_title = '^.*<title[^>]*>\(.*\)</title>.*$'
@@ -185,11 +183,11 @@ function! s:SetMark(id, readed)
   endif
 
   if a:readed
-    let opt = {'a': 'user/-/state/com.google/read', 'ac': 'edit-tags', 'i': a:id, 's': 'user/-/state/com.google/reading-list', 'r': 'user/-/state/com.google/kept-unread'}
+    let opt = {'a': 'user/-/state/com.google/read', 'ac': 'edit-tags', 'i': a:id, 's': 'user/-/state/com.google/reading-list', 'r': 'user/-/state/com.google/kept-unread', 'T': s:token}
   else
-    let opt = {'a': 'user/-/state/com.google/kept-unread', 'ac': 'edit-tags', 'i': a:id, 's': 'user/-/state/com.google/reading-list', 'r': 'user/-/state/com.google/read'}
+    let opt = {'a': 'user/-/state/com.google/kept-unread', 'ac': 'edit-tags', 'i': a:id, 's': 'user/-/state/com.google/reading-list', 'r': 'user/-/state/com.google/read', 'T': s:token}
   endif
-  return s:WebAccess("http://www.google.com/reader/api/0/edit-tag", {}, opt, {"SID": s:sid, "T": s:token})
+  return s:WebAccess("http://www.google.com/reader/api/0/edit-tag", {}, opt, {"SID": s:sid})
 endfunction
 
 function! s:GetEntries(email, passwd, opt)
@@ -334,7 +332,8 @@ endfunction
 function! s:ToggleMark()
   let bufname = s:LIST_BUFNAME
   let winnr = bufwinnr(bufname)
-  if winnr > 0 && winnr != winnr()
+  let oldwinnr = winnr()
+  if winnr > 0 && winnr != oldwinnr
     execute winnr.'wincmd w'
   endif
 
@@ -349,7 +348,9 @@ function! s:ToggleMark()
   setlocal modifiable
   call setline(line('.'), str)
   let &l:modifiable = oldmodifiable
-  wincmd p
+  if winnr > 0 && winnr != oldwinnr
+    wincmd p
+  endif
 endfunction
 
 function! s:ShowEntries(opt)
