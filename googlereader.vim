@@ -1,7 +1,7 @@
 "=============================================================================
 " File: googlereader.vim
 " Author: Yasuhiro Matsumoto <mattn.jp@gmail.com>
-" Last Change: 15-Jun-2009.
+" Last Change: 16-Jun-2009.
 " Version: 0.5
 " WebPage: http://github.com/mattn/googlereader-vim/tree/master
 " Usage:
@@ -103,14 +103,6 @@ function! s:WebAccess(url, getdata, postdata, cookie)
   return system("curl -s -k " . postdata . cookie . " \"" . url . "\"")
 endfunction
 
-function! s:GetSID(email, passwd)
-  return substitute(s:WebAccess("https://www.google.com/accounts/ClientLogin", {}, {"Email": a:email, "Passwd": a:passwd, "source": "googlereader.vim", "service": "reader"}, {}), '^SID=\([^\x0a]*\).*', '\1', '')
-endfunction
-
-function! s:GetToken(sid)
-  return s:WebAccess("http://www.google.com/reader/api/0/token", {}, {}, {"SID": a:sid})
-endfunction
-
 function! s:FormatEntry(str)
   let mx_id = '^\(.*\)<id[^>]*>\(.*\)</id>\(.*\)$'
   let mx_source = '^\(.*\)<source[^>]*>\(.*\)</source>\(.*\)$'
@@ -164,33 +156,30 @@ function! s:FormatEntry(str)
   return {"id": id, "title": title, "source": source, "url": url, "content": content, "author": author, "published": published, "readed": readed}
 endfunction
 
-function! s:SetReaded(id)
+function! s:SetMark(id, readed)
   if !exists("s:sid")
-    let s:sid = s:GetSID(g:googlereader_email, g:googlereader_passwd)
+    let s:sid = substitute(s:WebAccess("https://www.google.com/accounts/ClientLogin", {}, {"Email": a:email, "Passwd": a:passwd, "source": "googlereader.vim", "service": "reader"}, {}), '^SID=\([^\x0a]*\).*', '\1', '')
   endif
   if !exists("s:token")
-    let s:token = s:GetToken(s:sid)
+    let s:token = s:WebAccess("http://www.google.com/reader/api/0/token", {}, {}, {"SID": s:sid})
   endif
-" not implemented
-"
-"    EDIT_TAG_ARGS = {
-"        'feed' : 's',
-"        'entry' : 'i',
-"        'add' : 'a',
-"        'remove' : 'r',
-"        'action' : 'edit-tags',
-"        'token' : s:token,
-"        }
-"  return s:WebAccess("http://www.google.com/reader/api/0/edit-tag", {}, {}, {"SID": a:sid})
+
+  if a:readed
+    let opt = {'a': 'user/-/state/com.google/read', 'ac': 'edit-tags', 'i': a:id, 's': 'user/-/state/com.google/reading-list', 'r': 'user/-/state/com.google/kept-unread'}
+  else
+    let opt = {'a': 'user/-/state/com.google/kept-unread', 'ac': 'edit-tags', 'i': a:id, 's': 'user/-/state/com.google/reading-list', 'r': 'user/-/state/com.google/read'}
+  endif
+  return s:WebAccess("http://www.google.com/reader/api/0/edit-tag", {}, {}, {"SID": s:sid, "T": s:token})
 endfunction
 
 function! s:GetEntries(email, passwd, opt)
   if !exists("s:sid")
-    let s:sid = s:GetSID(a:email, a:passwd)
+    let s:sid = substitute(s:WebAccess("https://www.google.com/accounts/ClientLogin", {}, {"Email": a:email, "Passwd": a:passwd, "source": "googlereader.vim", "service": "reader"}, {}), '^SID=\([^\x0a]*\).*', '\1', '')
   endif
   if !exists("s:token")
-    let s:token = s:GetToken(s:sid)
+    let s:token = s:WebAccess("http://www.google.com/reader/api/0/token", {}, {}, {"SID": s:sid})
   endif
+
   if !has_key(a:opt, "n")
     let a:opt["n"] = 50
   endif
@@ -217,7 +206,10 @@ function! s:ShowEntry()
     execute winnr.'wincmd w'
   endif
 
-  let row = str2nr(substitute(getline('.'), '^\(\d\+\).*', '\1', ''))-1
+  let str = getline('.')
+  let mx_row_mark = '^\(\d\+\)\(: \)\([U ]\)\( .*\)'
+  let row = str2nr(substitute(matchstr(str, mx_row_mark), mx_row_mark, '\1', '')) - 1
+  let mark = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\3', '')
 
   let bufname = s:CONTENT_BUFNAME
   let winnr = bufwinnr(bufname)
@@ -225,7 +217,8 @@ function! s:ShowEntry()
     if bufname('%').'X' ==# 'X' && &modified == 0
       silent! edit `=bufname`
     else
-      silent! belowright 15new `=bufname`
+      let height = winheight('.') * 7 / 10
+      silent! exec 'belowright '.height.'new `=bufname`'
     endif
   else
     if winnr != winnr()
@@ -235,6 +228,10 @@ function! s:ShowEntry()
   setlocal buftype=nofile bufhidden=hide noswapfile nowrap ft= nowrap nonumber modifiable
   silent! %d _
   let entry = s:entries[row]
+  if mark == 'U'
+    call s:ToggleMark()
+  endif
+
   call setline(1, printf("Source: %s", entry['source']))
   call setline(2, printf("Title: %s", entry['title']))
   call setline(3, printf("URL: %s", entry['url']))
@@ -299,15 +296,12 @@ endfunction
 function! s:ShowNextEntry()
   let bufname = s:CONTENT_BUFNAME
   let winnr = bufwinnr(bufname)
-  let g:hoge = winnr
   if winnr < 1
     return
   endif
-  let g:hoge = winnr
   if winnr != winnr()
     execute winnr.'wincmd w'
   endif
-  let g:hoge = 'foo'
 
   let bufname = s:LIST_BUFNAME
   let winnr = bufwinnr(bufname)
@@ -316,6 +310,27 @@ function! s:ShowNextEntry()
 	normal! j
 	call s:ShowEntry()
   endif
+endfunction
+
+function! s:ToggleMark()
+  let bufname = s:LIST_BUFNAME
+  let winnr = bufwinnr(bufname)
+  if winnr > 0 && winnr != winnr()
+    execute winnr.'wincmd w'
+  endif
+
+  let str = getline('.')
+  let mx_row_mark = '^\(\d\+\)\(: \)\([U ]\)\( .*\)'
+  let row = str2nr(substitute(matchstr(str, mx_row_mark), mx_row_mark, '\1', '')) - 1
+  let mark = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\3', '')
+  let entry = s:entries[row]
+  call s:SetMark(entry['id'], (mark == 'U' ? 1 : 0))
+  let str = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\1\2'.(mark == 'U' ? ' ' : 'U').'\4', '')
+  let oldmodifiable = &modifiable
+  setlocal modifiable
+  call setline(line('.'), str)
+  let &modifiable = oldmodifiable
+  wincmd p
 endfunction
 
 function! s:ShowEntries(opt)
@@ -378,6 +393,7 @@ function! s:ShowEntries(opt)
   exec 'nnoremap <silent> <buffer> r :call <SID>ShowEntries({})<cr>'
   exec 'nnoremap <silent> <buffer> <s-a> :call <SID>ShowEntries({"xt": "user/-/state/com.google/read"})<cr>'
   exec 'nnoremap <silent> <buffer> <c-a> :call <SID>ShowEntries({"xt": ""})<cr>'
+  exec 'nnoremap <silent> <buffer> <c-t> :call <SID>ToggleMark()<cr>'
   nnoremap <silent> <buffer> <c-n> j
   nnoremap <silent> <buffer> <c-p> k
   nnoremap <silent> <buffer> q :bw!<cr>
