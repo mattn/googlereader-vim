@@ -20,7 +20,7 @@ if !executable('curl')
   finish
 endif
 
-let s:LIST_BUFNAME = '==GoogleReader List=='
+let s:LIST_BUFNAME = '==GoogleReader Entries=='
 let s:CONTENT_BUFNAME = '==GoogleReader Content=='
 
 function! s:wcwidth(ucs)
@@ -173,7 +173,7 @@ function! s:WebAccess(url, getdata, postdata, cookie, returnheader)
   endfor
 
   if len(getdata)
-    let url = a:url . "?" . getdata
+    let url .= "?" . getdata
   endif
   let command = "curl -s -k"
   if a:returnheader
@@ -511,6 +511,10 @@ function! s:ShowEntries(opt)
       execute winnr.'wincmd w'
     endif
   endif
+  setlocal buftype=nofile bufhidden=hide noswapfile nowrap ft= nowrap nonumber cursorline modifiable
+  silent! %d _
+  redraw!
+
   if !exists('b:xt')
     let b:xt = 'user/-/state/com.google/read'
   endif
@@ -518,10 +522,6 @@ function! s:ShowEntries(opt)
     let a:opt['xt'] = b:xt
   endif
   let b:xt = a:opt['xt']
-  setlocal buftype=nofile bufhidden=hide noswapfile nowrap ft= nowrap nonumber cursorline modifiable
-  silent! %d _
-  redraw!
-
   if len(a:opt['xt'])
     echo "reading unread entries..."
   else
@@ -530,8 +530,7 @@ function! s:ShowEntries(opt)
   let s:entries = s:GetEntries(email, passwd, a:opt)
   let cnt = 1
   for l:entry in s:entries
-	let g:moge = l:entry['source']
-    let source = s:truncate(g:moge, 20)
+    let source = s:truncate(l:entry['source'], 20)
     call setline(cnt, printf("%03d: %s%s %s %s", cnt, (l:entry['starred'] == 1 ? '*' : ' '), (l:entry['readed'] == 1 ? ' ' : 'U'), source, l:entry['title']))
     let cnt = cnt + 1
   endfor
@@ -581,6 +580,10 @@ function! s:Help()
   redraw!
 endfunction
 
-command! GoogleReader call s:ShowEntries({"xt": ""})
+function! s:GoogleReader()
+  call s:ShowEntries({"xt": ""})
+endfunction
+
+command! GoogleReader call s:GoogleReader()
 
 " vim:set et
