@@ -334,8 +334,10 @@ function! s:ShowEntry()
       execute winnr.'wincmd w'
     endif
   endif
-  setlocal buftype=nofile bufhidden=hide noswapfile nowrap ft= nowrap nonumber modifiable
+  setlocal buftype=nofile bufhidden=hide noswapfile nowrap ft= nonumber modifiable
   silent! %d _
+  redraw!
+
   let entry = s:entries[row]
   if readed == 'U'
     call s:ToggleReaded()
@@ -510,7 +512,7 @@ function! s:ShowEntries(opt)
       execute winnr.'wincmd w'
     endif
   endif
-  setlocal buftype=nofile bufhidden=hide noswapfile nowrap ft= nowrap nonumber cursorline modifiable
+  setlocal buftype=nofile bufhidden=hide noswapfile nowrap ft= nonumber modifiable cursorline
   silent! %d _
   redraw!
 
