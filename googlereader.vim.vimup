@@ -2,7 +2,7 @@ script_name: GoogleReader.vim
 script_id: '2678'
 script_type: utility
 script_package: googlereader.vim
-script_version: '1.2'
+script_version: '1.3'
 required_vim_version: '7.0'
 summary: vimscript for googlereader
 
@@ -40,6 +40,9 @@ install_details: |
   copy it to your plugin directory.
 
 versions:
+- '1.3': |
+   This is an upgrade for GoogleReader.vim: open browser does not work on mac.
+
 - '1.2': |
    This is an upgrade for GoogleReader.vim: changed keybind for star/unstar to <s-s> from <c-s> because it does not work on unix terminal. and fixed list layout of entries.
 
