@@ -1,7 +1,7 @@
 "=============================================================================
 " File: googlereader.vim
 " Author: Yasuhiro Matsumoto <mattn.jp@gmail.com>
-" Last Change: 16-Jun-2009.
+" Last Change: 17-Jun-2009.
 " Version: 1.2
 " WebPage: http://github.com/mattn/googlereader-vim/tree/master
 " Usage:
@@ -75,11 +75,11 @@ function! s:truncate(str, num)
 	  break
     endif
     let width = width + cells
-	let ret = ret . char
+	let ret .= char
     let str = substitute(str, mx_first, '\2', '')
   endwhile
   while width + 1 <= a:num
-    let ret = ret . " "
+    let ret .= " "
     let width = width + 1
   endwhile
   return ret
@@ -124,11 +124,11 @@ function! s:encodeURIComponent(instr)
   while i < len
     let ch = instr[i]
     if ch =~# '[0-9A-Za-z-._~!''()*]'
-      let outstr = outstr . ch
+      let outstr .= ch
     elseif ch == ' '
-      let outstr = outstr . '+'
+      let outstr .= '+'
     else
-      let outstr = outstr . '%' . substitute('0' . s:nr2hex(char2nr(ch)), '^.*\(..\)$', '\1', '')
+      let outstr .= '%' . substitute('0' . s:nr2hex(char2nr(ch)), '^.*\(..\)$', '\1', '')
     endif
     let i = i + 1
   endwhile
@@ -148,7 +148,7 @@ function! s:decodeEntityReference(str)
   return str
 endfunction
 
-function! s:WebAccess(url, getdata, postdata, cookie)
+function! s:WebAccess(url, getdata, postdata, cookie, returnheader)
   let url = a:url
 
   let getdata = ''
@@ -156,7 +156,7 @@ function! s:WebAccess(url, getdata, postdata, cookie)
     if len(getdata)
       let getdata .= "&"
     endif
-    let getdata = getdata . key . "=" . s:encodeURIComponent(a:getdata[key])
+    let getdata .= key . "=" . s:encodeURIComponent(a:getdata[key])
   endfor
 
   let postdata = ''
@@ -164,16 +164,20 @@ function! s:WebAccess(url, getdata, postdata, cookie)
     if len(postdata)
       let postdata .= "&"
     endif
-    let postdata = postdata . key . "=" . s:encodeURIComponent(a:postdata[key])
+    let postdata .= key . "=" . s:encodeURIComponent(a:postdata[key])
   endfor
 
   let cookie = ''
   for key in keys(a:cookie)
-    let cookie = cookie . " -b " . key . "=" . s:encodeURIComponent(a:cookie[key])
+    let cookie .= " -b " . key . "=" . s:encodeURIComponent(a:cookie[key])
   endfor
 
   if len(getdata)
     let url = a:url . "?" . getdata
+  endif
+  let command = "curl -s -k"
+  if a:returnheader
+    let command .= " -i"
   endif
   if len(postdata)
     let file = tempname()
@@ -181,10 +185,10 @@ function! s:WebAccess(url, getdata, postdata, cookie)
     silent echo postdata
     redir END
     let quote = &shellxquote == '"' ?  "'" : '"'
-    let res = system("curl -s -k -d @" . quote.file.quote . cookie . " \"" . url . "\"")
+    let res = system(command . " -d @" . quote.file.quote . cookie . " \"" . url . "\"")
     call delete(file)
   else
-    let res = system("curl -s -k " . cookie . " \"" . url . "\"")
+    let res = system(command . " " . cookie . " \"" . url . "\"")
   endif
   return res
 endfunction
@@ -246,10 +250,10 @@ endfunction
 
 function! s:SetStarred(id, star)
   if !exists("s:sid")
-    let s:sid = substitute(s:WebAccess("https://www.google.com/accounts/ClientLogin", {}, {"Email": a:email, "Passwd": a:passwd, "source": "googlereader.vim", "service": "reader"}, {}), '^SID=\([^\x0a]*\).*', '\1', '')
+    let s:sid = substitute(s:WebAccess("https://www.google.com/accounts/ClientLogin", {}, {"Email": a:email, "Passwd": a:passwd, "source": "googlereader.vim", "service": "reader"}, {}, 0), '^SID=\([^\x0a]*\).*', '\1', '')
   endif
   if !exists("s:token")
-    let s:token = s:WebAccess("http://www.google.com/reader/api/0/token", {}, {}, {"SID": s:sid})
+    let s:token = s:WebAccess("http://www.google.com/reader/api/0/token", {}, {}, {"SID": s:sid}, 0)
   endif
 
   if a:star
@@ -257,15 +261,16 @@ function! s:SetStarred(id, star)
   else
     let opt = {'r': 'user/-/state/com.google/starred', 'ac': 'edit-tags', 'i': a:id, 's': 'user/-/state/com.google/reading-list', 'T': s:token}
   endif
-  return s:WebAccess("http://www.google.com/reader/api/0/edit-tag", {}, opt, {"SID": s:sid})
+  "return s:WebAccess("http://www.google.com/reader/api/0/edit-tag", {}, opt, {"SID": s:sid}, 0)
+  return s:WebAccess("http://www.google.com/reader/api/0/edit-tag", {}, opt, {"SID": s:sid}, 0)
 endfunction
 
 function! s:SetReaded(id, readed)
   if !exists("s:sid")
-    let s:sid = substitute(s:WebAccess("https://www.google.com/accounts/ClientLogin", {}, {"Email": a:email, "Passwd": a:passwd, "source": "googlereader.vim", "service": "reader"}, {}), '^SID=\([^\x0a]*\).*', '\1', '')
+    let s:sid = substitute(s:WebAccess("https://www.google.com/accounts/ClientLogin", {}, {"Email": a:email, "Passwd": a:passwd, "source": "googlereader.vim", "service": "reader"}, {}, 0), '^SID=\([^\x0a]*\).*', '\1', '')
   endif
   if !exists("s:token")
-    let s:token = s:WebAccess("http://www.google.com/reader/api/0/token", {}, {}, {"SID": s:sid})
+    let s:token = s:WebAccess("http://www.google.com/reader/api/0/token", {}, {}, {"SID": s:sid}, 0)
   endif
 
   if a:readed
@@ -273,15 +278,15 @@ function! s:SetReaded(id, readed)
   else
     let opt = {'a': 'user/-/state/com.google/kept-unread', 'ac': 'edit-tags', 'i': a:id, 's': 'user/-/state/com.google/reading-list', 'r': 'user/-/state/com.google/read', 'T': s:token}
   endif
-  return s:WebAccess("http://www.google.com/reader/api/0/edit-tag", {}, opt, {"SID": s:sid})
+  return s:WebAccess("http://www.google.com/reader/api/0/edit-tag", {}, opt, {"SID": s:sid}, 0)
 endfunction
 
 function! s:GetEntries(email, passwd, opt)
   if !exists("s:sid")
-    let s:sid = substitute(s:WebAccess("https://www.google.com/accounts/ClientLogin", {}, {"Email": a:email, "Passwd": a:passwd, "source": "googlereader.vim", "service": "reader"}, {}), '^SID=\([^\x0a]*\).*', '\1', '')
+    let s:sid = substitute(s:WebAccess("https://www.google.com/accounts/ClientLogin", {}, {"Email": a:email, "Passwd": a:passwd, "source": "googlereader.vim", "service": "reader"}, {}, 0), '^SID=\([^\x0a]*\).*', '\1', '')
   endif
   if !exists("s:token")
-    let s:token = s:WebAccess("http://www.google.com/reader/api/0/token", {}, {}, {"SID": s:sid})
+    let s:token = s:WebAccess("http://www.google.com/reader/api/0/token", {}, {}, {"SID": s:sid}, 0)
   endif
 
   if !has_key(a:opt, "n")
@@ -295,7 +300,7 @@ function! s:GetEntries(email, passwd, opt)
   if len(opt["xt"]) == 0
     call remove(opt, "xt")
   endif
-  let feed = s:WebAccess("http://www.google.com/reader/atom/user/-/state/com.google/reading-list", opt, {}, {"SID": s:sid, "T": s:token})
+  let feed = s:WebAccess("http://www.google.com/reader/atom/user/-/state/com.google/reading-list", opt, {}, {"SID": s:sid, "T": s:token}, 0)
   let feed = iconv(feed, "utf-8", &encoding)
   let feed = substitute(feed, '<', "\r<", 'g')
   let feed = substitute(feed, '\(<entry[^>]*>.\{-}</entry>\)', '\=substitute(submatch(1), "[\r\n]", "", "g")', 'g')
@@ -434,12 +439,15 @@ function! s:ToggleStarred()
   let starred = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\3', '')
   let readed = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\4', '')
   let entry = s:entries[row]
-  call s:SetStarred(entry['id'], (starred == '*' ? 0 : 1))
-  let str = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\1\2'.(starred == '*' ? ' ' : '*').readed.'\5', '')
-  let oldmodifiable = &l:modifiable
-  setlocal modifiable
-  call setline(line('.'), str)
-  let &l:modifiable = oldmodifiable
+  if s:SetStarred(entry['id'], (starred == '*' ? 0 : 1)) == "OK"
+    let str = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\1\2'.(starred == '*' ? ' ' : '*').readed.'\5', '')
+    let oldmodifiable = &l:modifiable
+    setlocal modifiable
+    call setline(line('.'), str)
+    let &l:modifiable = oldmodifiable
+  else
+    echoerr "GoogleReader: failed to mark star or unstar"
+  endif
   if winnr > 0 && winnr != oldwinnr
     wincmd p
   endif
@@ -459,12 +467,13 @@ function! s:ToggleReaded()
   let starred = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\3', '')
   let readed = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\4', '')
   let entry = s:entries[row]
-  call s:SetReaded(entry['id'], (readed == 'U' ? 1 : 0))
-  let str = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\1\2'.starred.(readed == 'U' ? ' ' : 'U').'\5', '')
-  let oldmodifiable = &l:modifiable
-  setlocal modifiable
-  call setline(line('.'), str)
-  let &l:modifiable = oldmodifiable
+  if s:SetReaded(entry['id'], (readed == 'U' ? 1 : 0)) == "OK"
+    let str = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\1\2'.starred.(readed == 'U' ? ' ' : 'U').'\5', '')
+    let oldmodifiable = &l:modifiable
+    setlocal modifiable
+    call setline(line('.'), str)
+    let &l:modifiable = oldmodifiable
+  endif
   if winnr > 0 && winnr != oldwinnr
     wincmd p
   endif
@@ -523,8 +532,6 @@ function! s:ShowEntries(opt)
   for l:entry in s:entries
 	let g:moge = l:entry['source']
     let source = s:truncate(g:moge, 20)
-	let g:hoge = source
-    "call setline(cnt, printf("%03d: %s%s %s %s", cnt, (l:entry['starred'] == 1 ? '*' : ' '), (l:entry['readed'] == 1 ? ' ' : 'U'), l:entry['source'], l:entry['title']))
     call setline(cnt, printf("%03d: %s%s %s %s", cnt, (l:entry['starred'] == 1 ? '*' : ' '), (l:entry['readed'] == 1 ? ' ' : 'U'), source, l:entry['title']))
     let cnt = cnt + 1
   endfor
