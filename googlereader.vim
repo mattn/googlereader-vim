@@ -248,36 +248,22 @@ function! s:FormatEntry(str)
   return {"id": id, "title": title, "source": source, "url": url, "content": content, "author": author, "published": published, "readed": readed, "starred": starred}
 endfunction
 
-function! s:SetStarred(id, star)
-  if !exists("s:sid")
-    let s:sid = substitute(s:WebAccess("https://www.google.com/accounts/ClientLogin", {}, {"Email": a:email, "Passwd": a:passwd, "source": "googlereader.vim", "service": "reader"}, {}, 0), '^SID=\([^\x0a]*\).*', '\1', '')
-  endif
-  if !exists("s:token")
-    let s:token = s:WebAccess("http://www.google.com/reader/api/0/token", {}, {}, {"SID": s:sid}, 0)
-  endif
-
+function! s:SetStarred(sid, token, id, star)
   if a:star
-    let opt = {'a': 'user/-/state/com.google/starred', 'ac': 'edit-tags', 'i': a:id, 's': 'user/-/state/com.google/reading-list', 'T': s:token}
+    let opt = {'a': 'user/-/state/com.google/starred', 'ac': 'edit-tags', 'i': a:id, 's': 'user/-/state/com.google/reading-list', 'T': a:token}
   else
-    let opt = {'r': 'user/-/state/com.google/starred', 'ac': 'edit-tags', 'i': a:id, 's': 'user/-/state/com.google/reading-list', 'T': s:token}
+    let opt = {'r': 'user/-/state/com.google/starred', 'ac': 'edit-tags', 'i': a:id, 's': 'user/-/state/com.google/reading-list', 'T': a:token}
   endif
-  return s:WebAccess("http://www.google.com/reader/api/0/edit-tag", {}, opt, {"SID": s:sid}, 0)
+  return s:WebAccess("http://www.google.com/reader/api/0/edit-tag", {}, opt, {"SID": a:sid}, 0)
 endfunction
 
-function! s:SetReaded(id, readed)
-  if !exists("s:sid")
-    let s:sid = substitute(s:WebAccess("https://www.google.com/accounts/ClientLogin", {}, {"Email": a:email, "Passwd": a:passwd, "source": "googlereader.vim", "service": "reader"}, {}, 0), '^SID=\([^\x0a]*\).*', '\1', '')
-  endif
-  if !exists("s:token")
-    let s:token = s:WebAccess("http://www.google.com/reader/api/0/token", {}, {}, {"SID": s:sid}, 0)
-  endif
-
+function! s:SetReaded(sid, token, id, readed)
   if a:readed
-    let opt = {'a': 'user/-/state/com.google/read', 'ac': 'edit-tags', 'i': a:id, 's': 'user/-/state/com.google/reading-list', 'r': 'user/-/state/com.google/kept-unread', 'T': s:token}
+    let opt = {'a': 'user/-/state/com.google/read', 'ac': 'edit-tags', 'i': a:id, 's': 'user/-/state/com.google/reading-list', 'r': 'user/-/state/com.google/kept-unread', 'T': a:token}
   else
-    let opt = {'a': 'user/-/state/com.google/kept-unread', 'ac': 'edit-tags', 'i': a:id, 's': 'user/-/state/com.google/reading-list', 'r': 'user/-/state/com.google/read', 'T': s:token}
+    let opt = {'a': 'user/-/state/com.google/kept-unread', 'ac': 'edit-tags', 'i': a:id, 's': 'user/-/state/com.google/reading-list', 'r': 'user/-/state/com.google/read', 'T': a:token}
   endif
-  return s:WebAccess("http://www.google.com/reader/api/0/edit-tag", {}, opt, {"SID": s:sid}, 0)
+  return s:WebAccess("http://www.google.com/reader/api/0/edit-tag", {}, opt, {"SID": a:sid}, 0)
 endfunction
 
 function! s:GetEntries(email, passwd, opt)
@@ -360,8 +346,8 @@ function! s:ShowEntry()
   exec 'nnoremap <silent> <buffer> <c-p> :call <SID>ShowPrevEntry()<cr>'
   exec 'nnoremap <silent> <buffer> <c-n> :call <SID>ShowNextEntry()<cr>'
   exec 'nnoremap <silent> <buffer> <c-i> :call <SID>ShowEntryInBrowser()<cr>'
-  exec 'nnoremap <silent> <buffer> <c-t> :call <SID>ToggleReaded()<cr>'
-  exec 'nnoremap <silent> <buffer> <s-s> :call <SID>ToggleStarred()<cr>'
+  exec 'nnoremap <silent> <buffer> +     :call <SID>ToggleReaded()<cr>'
+  exec 'nnoremap <silent> <buffer> *     :call <SID>ToggleStarred()<cr>'
   exec 'nnoremap <silent> <buffer> ?     :call <SID>Help()<cr>'
   let b:id = entry['id']
   let b:url = entry['url']
@@ -440,7 +426,7 @@ function! s:ToggleStarred()
   let starred = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\3', '')
   let readed = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\4', '')
   let entry = s:entries[row]
-  if s:SetStarred(entry['id'], (starred == '*' ? 0 : 1)) == "OK"
+  if s:SetStarred(s:sid, s:token, entry['id'], (starred == '*' ? 0 : 1)) == "OK"
     let str = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\1\2'.(starred == '*' ? ' ' : '*').readed.'\5', '')
     let oldmodifiable = &l:modifiable
     setlocal modifiable
@@ -468,7 +454,7 @@ function! s:ToggleReaded()
   let starred = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\3', '')
   let readed = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\4', '')
   let entry = s:entries[row]
-  if s:SetReaded(entry['id'], (readed == 'U' ? 1 : 0)) == "OK"
+  if s:SetReaded(s:sid, s:token, entry['id'], (readed == 'U' ? 1 : 0)) == "OK"
     let str = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\1\2'.starred.(readed == 'U' ? ' ' : 'U').'\5', '')
     let oldmodifiable = &l:modifiable
     setlocal modifiable
@@ -541,8 +527,8 @@ function! s:ShowEntries(opt)
   exec 'nnoremap <silent> <buffer> r     :call <SID>ShowEntries({})<cr>'
   exec 'nnoremap <silent> <buffer> <s-a> :call <SID>ShowEntries({"xt": "user/-/state/com.google/read"})<cr>'
   exec 'nnoremap <silent> <buffer> <c-a> :call <SID>ShowEntries({"xt": ""})<cr>'
-  exec 'nnoremap <silent> <buffer> <c-t> :call <SID>ToggleReaded()<cr>'
-  exec 'nnoremap <silent> <buffer> <s-s> :call <SID>ToggleStarred()<cr>'
+  exec 'nnoremap <silent> <buffer> +     :call <SID>ToggleReaded()<cr>'
+  exec 'nnoremap <silent> <buffer> *     :call <SID>ToggleStarred()<cr>'
   exec 'nnoremap <silent> <buffer> ?     :call <SID>Help()<cr>'
   nnoremap <silent> <buffer> <c-n> j
   nnoremap <silent> <buffer> <c-p> k
@@ -563,12 +549,12 @@ function! s:Help()
   echo '<cr>      : show the entry'
   echo '<c-a>     : show all list'
   echo '<s-a>     : show unread list'
-  echo '<c-t>     : toggle read/unread mark'
-  echo '<s-s>     : toggle star/unstar mark'
+  echo '+         : toggle read/unread mark'
+  echo '*         : toggle star/unstar mark'
   echo 'r         : reload entries'
   echo 'q         : close window'
   echohl Title
-  echo '[LIST]'
+  echo '[CONTENT]'
   echohl SpecialKey
   echo '<c-n>     : show next entry'
   echo '<c-p>     : show prev entry'
