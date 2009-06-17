@@ -20,8 +20,8 @@ detailed_description: |
     type <cr> to show entry
     type <c-a> to show all list
     type <s-a> to show unread list
-    type <c-t> to toggle read/unread mark
-    type <s-s> to toggle star/unstar mark
+    type +     to toggle read/unread mark
+    type *     to toggle star/unstar mark
     type r to reload entries
     type q to close window
 
