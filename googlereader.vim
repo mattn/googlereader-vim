@@ -261,7 +261,6 @@ function! s:SetStarred(id, star)
   else
     let opt = {'r': 'user/-/state/com.google/starred', 'ac': 'edit-tags', 'i': a:id, 's': 'user/-/state/com.google/reading-list', 'T': s:token}
   endif
-  "return s:WebAccess("http://www.google.com/reader/api/0/edit-tag", {}, opt, {"SID": s:sid}, 0)
   return s:WebAccess("http://www.google.com/reader/api/0/edit-tag", {}, opt, {"SID": s:sid}, 0)
 endfunction
 
