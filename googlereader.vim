@@ -372,6 +372,7 @@ function! s:ShowEntryInBrowser()
   else
     system("firefox '".b:url."' 2>&1 > /dev/null &")
   endif
+  redraw!
 endfunction
 
 function! s:ShowPrevEntry()
