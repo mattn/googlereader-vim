@@ -40,7 +40,7 @@ install_details: |
   copy it to your plugin directory.
 
 versions:
-- '1.8': |
+- '1.7': |
    This is an upgrade for GoogleReader.vim: show wrapped text in context window.
 
 - '1.6': |
