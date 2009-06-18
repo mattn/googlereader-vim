@@ -254,7 +254,7 @@ function! s:SetStarred(sid, token, id, star)
   else
     let opt = {'r': 'user/-/state/com.google/starred', 'ac': 'edit-tags', 'i': a:id, 's': 'user/-/state/com.google/reading-list', 'T': a:token}
   endif
-  return s:WebAccess("http://www.google.com/reader/api/0/edit-tag", {}, opt, {"SID": a:sid}, 0)
+  return s:WebAccess("https://www.google.com/reader/api/0/edit-tag", {}, opt, {"SID": a:sid}, 0)
 endfunction
 
 function! s:SetReaded(sid, token, id, readed)
@@ -263,7 +263,7 @@ function! s:SetReaded(sid, token, id, readed)
   else
     let opt = {'a': 'user/-/state/com.google/kept-unread', 'ac': 'edit-tags', 'i': a:id, 's': 'user/-/state/com.google/reading-list', 'r': 'user/-/state/com.google/read', 'T': a:token}
   endif
-  return s:WebAccess("http://www.google.com/reader/api/0/edit-tag", {}, opt, {"SID": a:sid}, 0)
+  return s:WebAccess("https://www.google.com/reader/api/0/edit-tag", {}, opt, {"SID": a:sid}, 0)
 endfunction
 
 function! s:GetEntries(email, passwd, opt)
@@ -271,7 +271,7 @@ function! s:GetEntries(email, passwd, opt)
     let s:sid = substitute(s:WebAccess("https://www.google.com/accounts/ClientLogin", {}, {"Email": a:email, "Passwd": a:passwd, "source": "googlereader.vim", "service": "reader"}, {}, 0), '^SID=\([^\x0a]*\).*', '\1', '')
   endif
   if !exists("s:token")
-    let s:token = s:WebAccess("http://www.google.com/reader/api/0/token", {}, {}, {"SID": s:sid}, 0)
+    let s:token = s:WebAccess("https://www.google.com/reader/api/0/token", {}, {}, {"SID": s:sid}, 0)
   endif
 
   if !has_key(a:opt, "n")
@@ -285,7 +285,7 @@ function! s:GetEntries(email, passwd, opt)
   if len(opt["xt"]) == 0
     call remove(opt, "xt")
   endif
-  let feed = s:WebAccess("http://www.google.com/reader/atom/user/-/state/com.google/reading-list", opt, {}, {"SID": s:sid, "T": s:token}, 0)
+  let feed = s:WebAccess("https://www.google.com/reader/atom/user/-/state/com.google/reading-list", opt, {}, {"SID": s:sid, "T": s:token}, 0)
   let feed = iconv(feed, "utf-8", &encoding)
   let feed = substitute(feed, '<', "\r<", 'g')
   let feed = substitute(feed, '\(<entry[^>]*>.\{-}</entry>\)', '\=substitute(submatch(1), "[\r\n]", "", "g")', 'g')
