@@ -320,7 +320,7 @@ function! s:ShowEntry()
       execute winnr.'wincmd w'
     endif
   endif
-  setlocal buftype=nofile bufhidden=hide noswapfile nowrap ft= nonumber modifiable
+  setlocal buftype=nofile bufhidden=hide noswapfile wrap ft= nonumber modifiable
   silent! %d _
   redraw!
 
@@ -338,7 +338,6 @@ function! s:ShowEntry()
   normal! G
   call setline(7, entry['content'])
   silent! %s/\r/\r/g
-  silent! normal! 7GVGgq
   setlocal nomodifiable
   syntax match SpecialKey /^\(Source\|Title\|URL\|Publish\|Author\):/he=e-1
   nnoremap <silent> <buffer> <space> <c-d>
