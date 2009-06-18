@@ -1,7 +1,7 @@
 "=============================================================================
 " File: googlereader.vim
 " Author: Yasuhiro Matsumoto <mattn.jp@gmail.com>
-" Last Change: 17-Jun-2009.
+" Last Change: 18-Jun-2009.
 " Version: 1.5
 " WebPage: http://github.com/mattn/googlereader-vim/tree/master
 " Usage:
@@ -368,7 +368,7 @@ function! s:ShowEntryInBrowser()
   if has('win32')
     silent! exec "!start rundll32 url.dll,FileProtocolHandler ".escape(b:url ,'#')
   elseif has('mac')
-    silent! exec "!open ".escape(b:url ,'#')
+    silent! exec "!open '".escape(b:url ,'#')."'"
   else
     system("firefox '".b:url."' 2>&1 > /dev/null &")
   endif
