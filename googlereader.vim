@@ -1,7 +1,7 @@
 "=============================================================================
 " File: googlereader.vim
 " Author: Yasuhiro Matsumoto <mattn.jp@gmail.com>
-" Last Change: 18-Jun-2009.
+" Last Change: 19-Jun-2009.
 " Version: 1.7
 " WebPage: http://github.com/mattn/googlereader-vim/tree/master
 " Usage:
@@ -100,7 +100,7 @@ function! s:nr2enc_char(charcode)
     return nr2char(a:charcode)
   endif
   let char = s:nr2byte(a:charcode)
-  if has('iconv') && strlen(char) > 1
+  if strlen(char) > 1
     let char = strtrans(iconv(char, 'utf-8', &encoding))
   endif
   return char
@@ -148,47 +148,50 @@ function! s:decodeEntityReference(str)
   return str
 endfunction
 
+function! s:item2query(items, sep)
+  let ret = ''
+  if type(a:items) == 4
+    for key in keys(a:items)
+      if strlen(ret) | let ret .= a:sep | endif
+      let ret .= key . "=" . s:encodeURIComponent(a:items[key])
+    endfor
+  elseif type(a:items) == 3
+    for item in a:items
+      if strlen(ret) | let ret .= a:sep | endif
+      let ret .= item
+    endfor
+  else
+    let ret = a:items
+  endif
+  return ret
+endfunction
+
 function! s:WebAccess(url, getdata, postdata, cookie, returnheader)
   let url = a:url
-
-  let getdata = ''
-  for key in keys(a:getdata)
-    if len(getdata)
-      let getdata .= "&"
-    endif
-    let getdata .= key . "=" . s:encodeURIComponent(a:getdata[key])
-  endfor
-
-  let postdata = ''
-  for key in keys(a:postdata)
-    if len(postdata)
-      let postdata .= "&"
-    endif
-    let postdata .= key . "=" . s:encodeURIComponent(a:postdata[key])
-  endfor
-
-  let cookie = ''
-  for key in keys(a:cookie)
-    let cookie .= " -b " . key . "=" . s:encodeURIComponent(a:cookie[key])
-  endfor
-
-  if len(getdata)
+  let getdata = s:item2query(a:getdata, '&')
+  let postdata = s:item2query(a:postdata, '&')
+  let cookie = s:item2query(a:cookie, '; ')
+  if strlen(getdata)
     let url .= "?" . getdata
   endif
   let command = "curl -s -k"
   if a:returnheader
     let command .= " -i"
   endif
-  if len(postdata)
+  if strlen(cookie)
+    let command .= " -H \"Cookie: " . cookie . "\""
+  endif
+  let command .= " \"" . url . "\""
+  if strlen(postdata)
     let file = tempname()
     exec 'redir! > '.file 
-    silent echo postdata
+    silent echon postdata
     redir END
     let quote = &shellxquote == '"' ?  "'" : '"'
-    let res = system(command . " -d @" . quote.file.quote . cookie . " \"" . url . "\"")
+    let res = system(command . " -d @" . quote.file.quote)
     call delete(file)
   else
-    let res = system(command . " " . cookie . " \"" . url . "\"")
+    let res = system(command . " \"" . url . "\"")
   endif
   return res
 endfunction
@@ -272,6 +275,11 @@ function! s:GetEntries(email, passwd, opt)
   endif
   if !exists("s:token")
     let s:token = s:WebAccess("https://www.google.com/reader/api/0/token", {}, {}, {"SID": s:sid}, 0)
+  endif
+  if s:sid == '' || s:sid =~ '^Error=BadAuthentication'
+    echoerr "GoogleReader: bad authentication"
+    let s:sid = ''
+	return []
   endif
 
   if !has_key(a:opt, "n")
