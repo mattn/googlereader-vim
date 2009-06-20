@@ -2,7 +2,7 @@
 " File: googlereader.vim
 " Author: Yasuhiro Matsumoto <mattn.jp@gmail.com>
 " Last Change: 21-Jun-2009.
-" Version: 1.9
+" Version: 2.0
 " WebPage: http://github.com/mattn/googlereader-vim/tree/master
 " Usage:
 "
@@ -10,7 +10,7 @@
 "
 " GetLatestVimScripts: 2678 1 :AutoInstall: googlereader.vim
 
-let g:googlereader_vim_version = "1.9"
+let g:googlereader_vim_version = "2.0"
 if &compatible
   finish
 endif
