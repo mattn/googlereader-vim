@@ -1,8 +1,8 @@
 "=============================================================================
 " File: googlereader.vim
 " Author: Yasuhiro Matsumoto <mattn.jp@gmail.com>
-" Last Change: 19-Jun-2009.
-" Version: 1.8
+" Last Change: 20-Jun-2009.
+" Version: 1.9
 " WebPage: http://github.com/mattn/googlereader-vim/tree/master
 " Usage:
 "
@@ -10,7 +10,7 @@
 "
 " GetLatestVimScripts: 2678 1 :AutoInstall: googlereader.vim
 
-let g:googlereader_vim_version = "1.8"
+let g:googlereader_vim_version = "1.9"
 if &compatible
   finish
 endif
@@ -185,7 +185,7 @@ function! s:WebAccess(url, getdata, postdata, cookie, returnheader)
   if strlen(postdata)
     let file = tempname()
     exec 'redir! > '.file 
-    silent echon postdata
+    silent echo postdata
     redir END
     let quote = &shellxquote == '"' ?  "'" : '"'
     let res = system(command . " -d @" . quote.file.quote)
@@ -377,7 +377,7 @@ function! s:ShowEntryInBrowser()
   elseif has('mac')
     silent! exec "!open '".escape(b:url ,'#')."'"
   else
-    system("firefox '".b:url."' 2>&1 > /dev/null &")
+    call system("firefox '".b:url."' 2>&1 > /dev/null &")
   endif
   redraw!
 endfunction
