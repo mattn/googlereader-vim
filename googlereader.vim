@@ -1,7 +1,7 @@
 "=============================================================================
 " File: googlereader.vim
 " Author: Yasuhiro Matsumoto <mattn.jp@gmail.com>
-" Last Change: 21-Jun-2009.
+" Last Change: 23-Jun-2009.
 " Version: 2.0
 " WebPage: http://github.com/mattn/googlereader-vim/tree/master
 " Usage:
@@ -71,11 +71,11 @@ function! s:truncate(str, num)
       break
     endif
     let cells = s:wcwidth(ucs)
-	if width + cells > a:num
-	  break
+    if width + cells > a:num
+      break
     endif
     let width = width + cells
-	let ret .= char
+    let ret .= char
     let str = substitute(str, mx_first, '\2', '')
   endwhile
   while width + 1 <= a:num
@@ -279,7 +279,7 @@ function! s:GetEntries(email, passwd, opt)
   if s:sid == '' || s:sid =~ '^Error=BadAuthentication'
     echoerr "GoogleReader: bad authentication"
     let s:sid = ''
-	return []
+    return []
   endif
 
   if !has_key(a:opt, "n")
