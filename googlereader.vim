@@ -328,7 +328,7 @@ function! s:ShowEntry()
       execute winnr.'wincmd w'
     endif
   endif
-  setlocal buftype=nofile bufhidden=hide noswapfile wrap ft= nonumber modifiable
+  setlocal buftype=nofile bufhidden=hide noswapfile wrap ft= nonumber modifiable nolist
   silent! %d _
   redraw!
 
