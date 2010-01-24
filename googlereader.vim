@@ -9,6 +9,7 @@
 "   :GoogleReader
 "
 " GetLatestVimScripts: 2678 1 :AutoInstall: googlereader.vim
+" Script type: plugin
 
 let g:googlereader_vim_version = "2.0"
 if &compatible
