@@ -329,7 +329,7 @@ function! s:ShowEntry()
       execute winnr.'wincmd w'
     endif
   endif
-  setlocal buftype=nofile bufhidden=hide noswapfile wrap ft= nonumber modifiable
+  setlocal buftype=nofile bufhidden=hide noswapfile wrap ft= nonumber modifiable nolist
   silent! %d _
   redraw!
 
@@ -378,7 +378,7 @@ function! s:ShowEntryInBrowser()
   elseif has('mac')
     silent! exec "!open '".escape(b:url ,'#')."'"
   else
-    call system("firefox '".b:url."' 2>&1 > /dev/null &")
+    call system("x-www-browser '".b:url."' 2>&1 > /dev/null &")
   endif
   redraw!
 endfunction
