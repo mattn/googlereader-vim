@@ -1,8 +1,8 @@
 "=============================================================================
 " File: googlereader.vim
 " Author: Yasuhiro Matsumoto <mattn.jp@gmail.com>
-" Last Change: 23-Jun-2009.
-" Version: 2.0
+" Last Change: 30-Jun-2010.
+" Version: 2.2
 " WebPage: http://github.com/mattn/googlereader-vim/tree/master
 " Usage:
 "
@@ -11,7 +11,7 @@
 " GetLatestVimScripts: 2678 1 :AutoInstall: googlereader.vim
 " Script type: plugin
 
-let g:googlereader_vim_version = "2.0"
+let g:googlereader_vim_version = "2.2"
 if &compatible
   finish
 endif
@@ -167,28 +167,25 @@ function! s:item2query(items, sep)
   return ret
 endfunction
 
-function! s:WebAccess(url, getdata, postdata, cookie, returnheader)
+function! s:doHttp(url, getdata, postdata, headdata, returnheader)
   let url = a:url
   let getdata = s:item2query(a:getdata, '&')
   let postdata = s:item2query(a:postdata, '&')
-  let cookie = s:item2query(a:cookie, '; ')
   if strlen(getdata)
     let url .= "?" . getdata
   endif
-  let command = "curl -s -k"
+  let command = "curl -L -s -k"
   if a:returnheader
     let command .= " -i"
   endif
-  if strlen(cookie)
-    let command .= " -H \"Cookie: " . cookie . "\""
-  endif
+  let quote = &shellxquote == '"' ?  "'" : '"'
+  for key in keys(a:headdata)
+    let command .= " -H " . quote . key . ": " . a:headdata[key] . quote
+  endfor
   let command .= " \"" . url . "\""
   if strlen(postdata)
     let file = tempname()
-    exec 'redir! > '.file
-    silent echo postdata
-    redir END
-    let quote = &shellxquote == '"' ?  "'" : '"'
+    call writefile([postdata], file)
     let res = system(command . " -d @" . quote.file.quote)
     call delete(file)
   else
@@ -252,30 +249,32 @@ function! s:FormatEntry(str)
   return {"id": id, "title": title, "source": source, "url": url, "content": content, "author": author, "published": published, "readed": readed, "starred": starred}
 endfunction
 
-function! s:SetStarred(sid, token, id, star)
+function! s:SetStarred(sid, auth, token, id, star)
   if a:star
     let opt = {'a': 'user/-/state/com.google/starred', 'ac': 'edit-tags', 'i': a:id, 's': 'user/-/state/com.google/reading-list', 'T': a:token}
   else
     let opt = {'r': 'user/-/state/com.google/starred', 'ac': 'edit-tags', 'i': a:id, 's': 'user/-/state/com.google/reading-list', 'T': a:token}
   endif
-  return s:WebAccess("https://www.google.com/reader/api/0/edit-tag", {}, opt, {"SID": a:sid}, 0)
+  return s:doHttp("https://www.google.com/reader/api/0/edit-tag", {}, opt, {"Cookie": "SID=".a:sid, "Authorization": "GoogleLogin auth=".a:auth}, 0)
 endfunction
 
-function! s:SetReaded(sid, token, id, readed)
+function! s:SetReaded(sid, auth, token, id, readed)
   if a:readed
     let opt = {'a': 'user/-/state/com.google/read', 'ac': 'edit-tags', 'i': a:id, 's': 'user/-/state/com.google/reading-list', 'r': 'user/-/state/com.google/kept-unread', 'T': a:token}
   else
     let opt = {'a': 'user/-/state/com.google/kept-unread', 'ac': 'edit-tags', 'i': a:id, 's': 'user/-/state/com.google/reading-list', 'r': 'user/-/state/com.google/read', 'T': a:token}
   endif
-  return s:WebAccess("https://www.google.com/reader/api/0/edit-tag", {}, opt, {"SID": a:sid}, 0)
+  return s:doHttp("https://www.google.com/reader/api/0/edit-tag", {}, opt, {"Cookie": "SID=".a:sid, "Authorization": "GoogleLogin auth=".a:auth}, 0)
 endfunction
 
 function! s:GetEntries(email, passwd, opt)
   if !exists("s:sid")
-    let s:sid = substitute(s:WebAccess("https://www.google.com/accounts/ClientLogin", {}, {"Email": a:email, "Passwd": a:passwd, "source": "googlereader.vim", "service": "reader"}, {}, 0), '^SID=\([^\x0a]*\).*', '\1', '')
+    let ret = split(s:doHttp("https://www.google.com/accounts/ClientLogin", {}, {"accountType": "HOSTED_OR_GOOGLE", "Email": a:email, "Passwd": a:passwd, "source": "googlereader.vim", "service": "reader"}, {}, 0), "\n")
+	let s:sid = substitute(ret[0], "^SID=", "", "")
+	let s:auth = substitute(ret[2], "^Auth=", "", "")
   endif
   if !exists("s:token")
-    let s:token = s:WebAccess("https://www.google.com/reader/api/0/token", {}, {}, {"SID": s:sid}, 0)
+    let s:token = s:doHttp("https://www.google.com/reader/api/0/token", {"client": "googlereader.vim", "ck": localtime()*1000}, {}, {"Cookie": "SID=".s:sid, "Authorization": "GoogleLogin auth=".s:auth}, 0)
   endif
   if s:sid == '' || s:sid =~ '^Error=BadAuthentication'
     echoerr "GoogleReader: bad authentication"
@@ -294,7 +293,7 @@ function! s:GetEntries(email, passwd, opt)
   if len(opt["xt"]) == 0
     call remove(opt, "xt")
   endif
-  let feed = s:WebAccess("https://www.google.com/reader/atom/user/-/state/com.google/reading-list", opt, {}, {"SID": s:sid, "T": s:token}, 0)
+  let feed = s:doHttp("https://www.google.com/reader/atom/user/-/state/com.google/reading-list", opt, {}, {"Cookie": "SID=".s:sid."; T=".s:token, "Authorization": "GoogleLogin auth=".s:auth}, 0)
   let feed = iconv(feed, "utf-8", &encoding)
   let feed = substitute(feed, '<', "\r<", 'g')
   let feed = substitute(feed, '\(<entry[^>]*>.\{-}</entry>\)', '\=substitute(submatch(1), "[\r\n]", "", "g")', 'g')
@@ -435,7 +434,7 @@ function! s:ToggleStarred()
   let starred = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\3', '')
   let readed = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\4', '')
   let entry = s:entries[row]
-  if s:SetStarred(s:sid, s:token, entry['id'], (starred == '*' ? 0 : 1)) == "OK"
+  if s:SetStarred(s:sid, s:auth, s:token, entry['id'], (starred == '*' ? 0 : 1)) == "OK"
     let str = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\1\2'.(starred == '*' ? ' ' : '*').readed.'\5', '')
     let oldmodifiable = &l:modifiable
     setlocal modifiable
@@ -463,7 +462,7 @@ function! s:ToggleReaded()
   let starred = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\3', '')
   let readed = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\4', '')
   let entry = s:entries[row]
-  if s:SetReaded(s:sid, s:token, entry['id'], (readed == 'U' ? 1 : 0)) == "OK"
+  if s:SetReaded(s:sid, s:auth, s:token, entry['id'], (readed == 'U' ? 1 : 0)) == "OK"
     let str = substitute(matchstr(str, mx_row_mark), mx_row_mark, '\1\2'.starred.(readed == 'U' ? ' ' : 'U').'\5', '')
     let oldmodifiable = &l:modifiable
     setlocal modifiable
